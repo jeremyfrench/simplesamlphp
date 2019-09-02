@@ -88,11 +88,6 @@ if (!empty($stateId)) {
 if ($state) {
     // check that the authentication source is correct
     assert(array_key_exists('saml:sp:AuthId', $state));
-    if ($state['saml:sp:AuthId'] !== $sourceId) {
-        throw new SimpleSAML_Error_Exception(
-            'The authentication source id in the URL does not match the authentication source which sent the request.'
-        );
-    }
 
     // check that the issuer is the one we are expecting
     assert(array_key_exists('ExpectedIssuer', $state));
