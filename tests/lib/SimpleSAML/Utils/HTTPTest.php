@@ -4,7 +4,7 @@ namespace SimpleSAML\Test\Utils;
 use PHPUnit\Framework\TestCase;
 use SimpleSAML\Utils\HTTP;
 
-class HTTPTest extends TestCase
+class HTTPTest extends ClearStateTestCase
 {
     /**
      * Set up the environment ($_SERVER) populating the typical variables from a given URL.
@@ -414,4 +414,59 @@ class HTTPTest extends TestCase
 
         $_SERVER = $original;
     }
+
+    /**
+     * @covers SimpleSAML\Utils\HTTP::setCookie()
+     * @runInSeparateProcess
+     * @requires extension xdebug
+     */
+    public function testSetCookie()
+    {
+        $original = $_SERVER;
+        \SimpleSAML_Configuration::loadFromArray([
+            'baseurlpath' => 'https://example.com/simplesaml/',
+        ], '[ARRAY]', 'simplesaml');
+        $url = 'https://example.com/a?b=c';
+        $this->setupEnvFromURL($url);
+
+        HTTP::setCookie('TestCookie', 'value%20', ['expire'=> 2147483640, 'path'=>'/ourPath', 'domain'=>'example.com', 'secure'=>true, 'httponly'=>true]);
+        HTTP::setCookie('RawCookie', 'value%20', ['lifetime'=>100, 'path'=>'/ourPath', 'domain'=>'example.com', 'secure'=>true, 'httponly'=>true, 'raw'=>true]);
+
+        $headers = xdebug_get_headers();
+        $this->assertContains('TestCookie=value%2520;', $headers[0]);
+        $this->assertRegExp('/\b[Ee]xpires=[Tt]ue/', $headers[0]);
+        $this->assertRegExp('/\b[Pp]ath=\/ourPath(;|$)/', $headers[0]);
+        $this->assertRegExp('/\b[Dd]omain=example.com(;|$)/', $headers[0]);
+        $this->assertRegExp('/\b[Ss]ecure(;|$)/', $headers[0]);
+        $this->assertRegExp('/\b[Hh]ttp[Oo]nly(;|$)/', $headers[0]);
+
+        $this->assertContains('RawCookie=value%20;', $headers[1]);
+        $this->assertRegExp('/\b[Ee]xpires=([Mm]on|[Tt]ue|[Ww]ed|[Tt]hu|[Ff]ri|[Ss]at|[Ss]un)/', $headers[1]);
+        $this->assertRegExp('/\b[Pp]ath=\/ourPath(;|$)/', $headers[1]);
+        $this->assertRegExp('/\b[Dd]omain=example.com(;|$)/', $headers[1]);
+        $this->assertRegExp('/\b[Ss]ecure(;|$)/', $headers[1]);
+        $this->assertRegExp('/\b[Hh]ttp[Oo]nly(;|$)/', $headers[1]);
+
+        $_SERVER = $original;
+    }
+
+    /**
+     * @covers SimpleSAML\Utils\HTTP::setCookie()
+     */
+    public function testSetCookieInsecure()
+    {
+        $this->expectException(\Error::class);
+
+        $original = $_SERVER;
+        Configuration::loadFromArray([
+            'baseurlpath' => 'http://example.com/simplesaml/',
+        ], '[ARRAY]', 'simplesaml');
+        $url = 'http://example.com/a?b=c';
+        $this->setupEnvFromURL($url);
+
+        HTTP::setCookie('testCookie', 'value', ['secure' => true], true);
+
+        $_SERVER = $original;
+    }
+
 }
