@@ -7,4 +7,4 @@ require_once($projectRoot . '/vendor/autoload.php');
 include($projectRoot . '/tests/Utils/ClearStateTestCase.php');
 
 
-$_SERVER['HTTP_USER_AGENT = 'foo';
+$_SERVER['HTTP_USER_AGENT'] = 'foo';
